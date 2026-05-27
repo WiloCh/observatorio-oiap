@@ -1,9 +1,24 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
-.streamlit/secrets.toml
+
+# Local development
+.vscode/
 .venv/
 venv/
+.env
+.env.*
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Local data and generated database files
 data/*.db
 data/*.db-*
+data/*.sqlite
+data/*.sqlite3
 
+# Runtime outputs
+logs/
+exports/
+uploads/
