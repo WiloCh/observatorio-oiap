@@ -5,8 +5,18 @@ from src.domain.constants import (
     ALERT_HIGH,
     ALERT_MONITORING,
     ALERT_OPPORTUNITY,
+    FOLLOW_UP_DISCARDED,
+    FOLLOW_UP_USED,
     LEVEL_ORDER,
 )
+
+PRIORITY_HIGH_THRESHOLD = 8
+PRIORITY_MONITORING_THRESHOLD = 5
+RISK_CRITICAL_THRESHOLD = 3
+RISK_HIGH_THRESHOLD = 2
+RELEVANCE_CRITICAL_THRESHOLD = 4
+RELEVANCE_HIGH_THRESHOLD = 3
+OPPORTUNITY_HIGH_THRESHOLD = 3
 
 
 def _text_series(df: pd.DataFrame, column: str) -> pd.Series:
@@ -41,11 +51,11 @@ def classify_alert(row: pd.Series) -> str:
     oportunidad = row.get("oportunidad_score", 0)
     relevancia = row.get("relevancia", 0)
 
-    if riesgo >= 3 and relevancia >= 4:
+    if riesgo >= RISK_CRITICAL_THRESHOLD and relevancia >= RELEVANCE_CRITICAL_THRESHOLD:
         return ALERT_CRITICAL
-    if riesgo >= 2 and relevancia >= 3:
+    if riesgo >= RISK_HIGH_THRESHOLD and relevancia >= RELEVANCE_HIGH_THRESHOLD:
         return ALERT_HIGH
-    if oportunidad >= 3 and relevancia >= 3:
+    if oportunidad >= OPPORTUNITY_HIGH_THRESHOLD and relevancia >= RELEVANCE_HIGH_THRESHOLD:
         return ALERT_OPPORTUNITY
     return ALERT_MONITORING
 
@@ -61,15 +71,15 @@ def suggest_next_action(row: pd.Series) -> str:
     oportunidad = row.get("oportunidad_score", 0)
     estado = str(row.get("estado_seguimiento", "") or "")
 
-    if estado == "Usado en decisión":
+    if estado == FOLLOW_UP_USED:
         return "Registrar resultado y mantener evidencia para trazabilidad institucional."
     if alert == ALERT_CRITICAL:
         return "Elevar al Círculo Operativo y definir respuesta institucional inmediata."
-    if prioridad >= 8 and riesgo >= 2:
+    if prioridad >= PRIORITY_HIGH_THRESHOLD and riesgo >= RISK_HIGH_THRESHOLD:
         return "Preparar insumo ejecutivo para validar si corresponde intervención o propuesta."
-    if alert == ALERT_OPPORTUNITY or oportunidad >= 3:
+    if alert == ALERT_OPPORTUNITY or oportunidad >= OPPORTUNITY_HIGH_THRESHOLD:
         return "Derivar a Think Tank o cooperación para evaluar propuesta, alianza o posicionamiento."
-    if prioridad >= 5:
+    if prioridad >= PRIORITY_MONITORING_THRESHOLD:
         return "Mantener en seguimiento y solicitar evidencia adicional antes de escalar."
     return "Monitorear sin escalar; revisar si aparecen nuevas señales o fuentes."
 
@@ -88,17 +98,17 @@ def get_executive_kpis(df: pd.DataFrame) -> dict:
         }
 
     criticas = df[df["clasificacion_alerta"] == ALERT_CRITICAL]
-    alta_prioridad = df[df["prioridad"] >= 8]
+    alta_prioridad = df[df["prioridad"] >= PRIORITY_HIGH_THRESHOLD]
     paises_criticos = criticas["pais"].nunique()
     insumos_accionables = df[
         _text_series(df, "decision_impacto").str.strip().ne("")
         | _text_series(df, "accion_recomendada").str.strip().ne("")
         | _text_series(df, "accion_sugerida_sistema").str.strip().ne("")
     ]
-    usados_en_decision = df[_text_series(df, "estado_seguimiento").eq("Usado en decisión")]
+    usados_en_decision = df[_text_series(df, "estado_seguimiento").eq(FOLLOW_UP_USED)]
     pendientes_de_accion = df[
-        (df["prioridad"] >= 8)
-        & ~_text_series(df, "estado_seguimiento").isin(["Usado en decisión", "Descartado"])
+        (df["prioridad"] >= PRIORITY_HIGH_THRESHOLD)
+        & ~_text_series(df, "estado_seguimiento").isin([FOLLOW_UP_USED, FOLLOW_UP_DISCARDED])
     ]
 
     return {

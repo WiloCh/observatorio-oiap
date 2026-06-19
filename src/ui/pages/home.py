@@ -1,4 +1,4 @@
-import io
+﻿import io
 
 import streamlit as st
 
@@ -13,13 +13,13 @@ def render_home_page() -> None:
     st.markdown(
         f"""
         El sistema ordena hallazgos institucionales para que puedan ser analizados,
-        priorizados y usados en decisiones estratégicas reales.
+        priorizados y usados en decisiones estrategicas reales.
 
         **Criterio central:** {OBSERVATORY_DECISION_QUESTION}
 
         - El Observatorio monitorea, analiza, anticipa y emite alertas.
         - El Think Tank puede traducir evidencia en propuestas.
-        - El Círculo Operativo decide viabilidad, activación y seguimiento.
+        - El Circulo Operativo decide viabilidad, activacion y seguimiento.
         """
     )
 

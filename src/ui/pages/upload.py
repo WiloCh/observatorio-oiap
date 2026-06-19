@@ -1,8 +1,9 @@
-import streamlit as st
+﻿import streamlit as st
 
 from src.database.repository import insert_dataframe
 from src.services.cleaning_service import clean_dataframe
 from src.services.ingestion_service import read_uploaded_file
+from src.ui.auth import current_user_id
 
 
 def render_upload_page() -> None:
@@ -35,7 +36,7 @@ def render_upload_page() -> None:
         st.info(f"{len(actionable)} de {len(clean_df)} registros incluyen decisión o acción recomendada.")
 
         if st.button("Guardar hallazgos en la base"):
-            inserted = insert_dataframe(clean_df)
+            inserted = insert_dataframe(clean_df, usuario_id=current_user_id())
             st.success(f"Se guardaron {inserted} registros.")
     except Exception as error:
         st.error(f"Error al procesar el archivo: {error}")

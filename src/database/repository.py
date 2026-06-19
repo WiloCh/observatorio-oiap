@@ -1,6 +1,7 @@
 import pandas as pd
 
-from src.database.connection import get_connection
+from src.database.audit_repository import log_action
+from src.database.connection import get_connection, placeholders, transaction
 from src.database.schema import TABLE_NAME
 from src.domain.constants import EVENT_COLUMNS, EVENT_READ_COLUMNS
 from src.domain.models import EventRecord
@@ -18,29 +19,28 @@ def validate_event_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return normalized
 
 
-def insert_dataframe(df: pd.DataFrame) -> int:
+def insert_dataframe(df: pd.DataFrame, usuario_id: int | None = None) -> int:
     if df.empty:
         return 0
 
     valid_df = validate_event_dataframe(df)
-
-    query = f"""
-    INSERT INTO {TABLE_NAME} (
-        fecha, pais, region, programa, tema, tipo_fuente, fuente,
-        titulo, descripcion, nivel_riesgo, nivel_oportunidad,
-        relevancia, decision_impacto, accion_recomendada, derivacion,
-        estado_seguimiento, observaciones
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """
-
+    columns = ", ".join(EVENT_COLUMNS)
+    query = f"INSERT INTO {TABLE_NAME} ({columns}) VALUES ({placeholders(len(EVENT_COLUMNS))})"
     rows = [
         EventRecord.from_mapping(record).to_row()
         for record in valid_df.to_dict(orient="records")
     ]
 
-    with get_connection() as conn:
-        conn.executemany(query, rows)
-        conn.commit()
+    with transaction() as conn:
+        cursor = conn.cursor()
+        cursor.executemany(query, rows)
+        log_action(
+            tabla=TABLE_NAME,
+            accion="insert_bulk",
+            usuario_id=usuario_id,
+            detalle=f"{len(rows)} hallazgo(s) insertado(s)",
+            conn=conn,
+        )
 
     return len(rows)
 
@@ -49,10 +49,19 @@ def get_all_data() -> pd.DataFrame:
     columns = ", ".join(EVENT_READ_COLUMNS)
     query = f"SELECT {columns} FROM {TABLE_NAME} ORDER BY fecha DESC, id DESC"
     with get_connection() as conn:
-        return pd.read_sql_query(query, conn)
+        cursor = conn.execute(query)
+        rows = cursor.fetchall()
+        column_names = [description[0] for description in cursor.description]
+    return pd.DataFrame(rows, columns=column_names)
 
 
-def delete_all_data() -> None:
-    with get_connection() as conn:
+def delete_all_data(usuario_id: int | None = None) -> None:
+    with transaction() as conn:
         conn.execute(f"DELETE FROM {TABLE_NAME}")
-        conn.commit()
+        log_action(
+            tabla=TABLE_NAME,
+            accion="delete_all",
+            usuario_id=usuario_id,
+            detalle="Borrado total de hallazgos",
+            conn=conn,
+        )

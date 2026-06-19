@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 
 import pandas as pd
 import streamlit as st
@@ -13,6 +13,7 @@ from src.domain.constants import (
     SOURCE_TYPES,
 )
 from src.services.cleaning_service import clean_dataframe
+from src.ui.auth import current_user_id
 
 
 def render_manual_entry_page() -> None:
@@ -90,7 +91,7 @@ def render_manual_entry_page() -> None:
     )
 
     clean_df = clean_dataframe(manual_df)
-    inserted = insert_dataframe(clean_df)
+    inserted = insert_dataframe(clean_df, usuario_id=current_user_id())
 
     if inserted > 0:
         st.success("Hallazgo guardado correctamente.")

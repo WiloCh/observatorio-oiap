@@ -1,8 +1,5 @@
 from dataclasses import dataclass
 
-
-EVENT_TABLE = "observatorio_eventos"
-
 EVENT_COLUMNS = [
     "fecha",
     "pais",
@@ -76,13 +73,21 @@ DERIVATION_TARGETS = [
     "Monitoreo continuo",
 ]
 
+FOLLOW_UP_DETECTED = "Detectado"
+FOLLOW_UP_IN_ANALYSIS = "En análisis"
+FOLLOW_UP_ESCALATED = "Elevado"
+FOLLOW_UP_USED = "Usado en decisión"
+FOLLOW_UP_DISCARDED = "Descartado"
+
 FOLLOW_UP_STATUSES = [
-    "Detectado",
-    "En análisis",
-    "Elevado",
-    "Usado en decisión",
-    "Descartado",
+    FOLLOW_UP_DETECTED,
+    FOLLOW_UP_IN_ANALYSIS,
+    FOLLOW_UP_ESCALATED,
+    FOLLOW_UP_USED,
+    FOLLOW_UP_DISCARDED,
 ]
+
+USER_ROLES = ["admin", "direccion", "analista", "consulta"]
 
 OBSERVATORY_DECISION_QUESTION = "¿A qué decisión concreta alimenta esto?"
 
